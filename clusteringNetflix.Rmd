@@ -1,0 +1,35 @@
+*** CLUSTERnotF
+---
+Because of the input data file format, use read.table to read in movieLens.txt, assign columnNames, mask unneeded columns and remove duplicate observations.
+```{r}
+movies = read.table("./Data/movieLens.txt", header=F, sep="|",quote="\"")
+
+colnames(movies) = c("ID", "Title", "ReleaseDate", "VideoReleaseDate", "IMDB", "Unknown", "Action", "Adventure", "Animation", "Childrens", "Comedy", "Crime", "Documentary", "Drama", "Fantasy", "FilmNoir", "Horror", "Musical", "Mystery", "Romance", "SciFi", "Thriller", "War", "Western")
+
+movies$ID = NULL
+movies$ReleaseDate = NULL
+movies$VideoReleaseDate = NULL
+movies$IMDB = NULL
+
+movies = unique(movies)
+```
+How many of the movies are comedies?
+```{r}
+nrow(movies[which(movies$Comedy==1),])
+```
+First define "distances" then use it to do hierarchical clustering
+distances = dist(movies[2:20], method = "euclidean")
+
+clusterMovies = hclust(distances, method = "ward.D") #hierarchical clustering
+plot(clusterMovies)
+```
+Assign observations to clusters and look at similarites between groups.  If someone liked the movie, 'Men in Black', what other movies might they like?
+```{r}
+clusterGroups = cutree(clusterMovies, k = 10)
+tapply(movies$Action, clusterGroups, mean)
+tapply(movies$Romance, clusterGroups, mean)
+
+subset(movies, Title=="Men in Black (1997)")
+clusterGroups[257]
+cluster2 = subset(movies, clusterGroups==2)
+
