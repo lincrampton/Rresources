@@ -18,6 +18,7 @@ How many of the movies are comedies?
 nrow(movies[which(movies$Comedy==1),])
 ```
 First define "distances" then use it to do hierarchical clustering
+```{r}
 distances = dist(movies[2:20], method = "euclidean")
 
 clusterMovies = hclust(distances, method = "ward.D") #hierarchical clustering
