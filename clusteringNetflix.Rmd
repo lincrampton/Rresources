@@ -23,6 +23,40 @@ distances = dist(movies[2:20], method = "euclidean")
 clusterMovies = hclust(distances, method = "ward.D") #hierarchical clustering
 plot(clusterMovies)
 ```
+Try plotting to a file
+```{r}
+pdf("./Data/clusterMovies.pdf", width=40, height=15)
+plot(clusterMovies)
+dev.off()
+```
+And just about when you think you are going to die from boring-graphics-boredom, go ape
+```{r}
+library('ape')
+plot(as.phylo(clusterMovies), 
+     type = "fan", 
+     tip.color = hsv(runif(15, 0.65, 0.95), 1, 1, 0.7), 
+     edge.color = hsv(runif(10, 0.65, 0.75), 1, 1, 0.7), 
+     edge.width = runif(20, 0.5, 3), 
+     use.edge.length = TRUE, 
+     col = "gray80")
+
+mypal = c("#556270", "#4ECDC4", "#1B676B", "#FF6B6B", "#C44D58") # vector of colors
+clus5 = cutree(clusterMovies, 125)  # cutting dendrogram in 25 clusters
+
+plot(as.phylo(clusterMovies), type = "fan", tip.color = mypal[clus5], label.offset = 1, col = "red")
+```
+Add some sparcl to the dendogram
+```{r}
+library(sparcl)
+# colors the leaves of a dendrogram
+y = cutree(clusterMovies, 3)
+ColorDendrogram(clusterMovies, y = y, labels = names(y), main = "My Cluster", branchlength = 80)
+```
+Rotate to look at it another way
+```{r}
+library('ggdendro')
+ggdendrogram(clusterMovies, rotate = TRUE, size = 4, theme_dendro = FALSE, color = "tomato")
+```
 Assign observations to clusters and look at similarites between groups.  If someone liked the movie, 'Men in Black', what other movies might they like?
 ```{r}
 clusterGroups = cutree(clusterMovies, k = 10)
@@ -32,4 +66,4 @@ tapply(movies$Romance, clusterGroups, mean)
 subset(movies, Title=="Men in Black (1997)")
 clusterGroups[257]
 cluster2 = subset(movies, clusterGroups==2)
-
+```
