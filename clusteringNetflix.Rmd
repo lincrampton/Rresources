@@ -1,4 +1,4 @@
-*** CLUSTERnotF
+*** Clustering
 ---
 Because of the input data file format, use read.table to read in movieLens.txt, assign columnNames, mask unneeded columns and remove duplicate observations.
 ```{r}
