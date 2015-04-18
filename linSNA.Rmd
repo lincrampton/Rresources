@@ -55,9 +55,9 @@ plot(g, vertex.label=NA)
 Color the vertices based on the school attended.
 ```{r}
 V(g)$color = "grey"
-V(g)$color[V(g)$school == "A"] = "green"
-V(g)$color[V(g)$school == "B"] = "red"
-V(g)$color[V(g)$school == "AB"] = "orange"
+V(g)$color[V(g)$school == "A"] = "maroon1"
+V(g)$color[V(g)$school == "B"] = "yellow"
+V(g)$color[V(g)$school == "AB"] = "cyan"
 plot(g, vertex.label=NA)
 ```
 Color the vertices based on the locale of the user
@@ -66,6 +66,6 @@ V(g)$color = "black"
 V(g)$color[V(g)$locale == "A"] = "magenta"
 V(g)$color[V(g)$locale == "B"] = "chartreuse"
 plot(g, vertex.label=NA, edge.width = 3)
-rglplot(g, vertex.label=NA)
+#rglplot(g, vertex.label=NA)  #rgl doesn't play well with R 3.1.3
 ```
 `
