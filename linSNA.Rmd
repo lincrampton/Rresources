@@ -10,8 +10,6 @@ users <- read.csv("./Data/users.csv")
 ```
 What is the average number of friends per user?
 ```{r}
-# nrow(edges)/(nrow(users)) #NOPE not 2.474576
-# nrow(edges)/(nrow(users) -1 ) #NOPE not 2.517241
 library('igraph')
 library('ggplot2')
 g <- graph.data.frame(edges, FALSE, users)
