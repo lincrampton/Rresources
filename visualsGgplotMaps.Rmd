@@ -1,0 +1,161 @@
+---
+title: "Visualisations ggplot2 geomaps EdX"
+author: "Lin Crampton"
+date: "19 Apr 2015"
+output: html_document
+---
+Clean up environment and load motor vehicle thefts data into mvt
+```{r initializeMVT}
+rm(list=ls())
+setwd('~/EdX/AE')
+mvt = read.csv("./Data/mvt.csv", stringsAsFactors=FALSE) #mvt = MotorVehicleThefts
+```
+Manipulate "12/31/12 22:00" format date
+```{r date munging}
+mvt$Date = strptime(mvt$Date, format="%m/%d/%y %H:%M")
+mvt$Weekday = weekdays(mvt$Date)
+mvt$Hour = mvt$Date$hour
+```
+Save date data as data frame and ggplot it
+```{r dataFraming}
+WeekdayCounts = as.data.frame(table(mvt$Weekday))
+
+library('ggplot2')
+ggplot(WeekdayCounts, aes(x=Var1, y=Freq)) + geom_line(aes(group=1))  
+```
+Convert Var1 to orderedFactor and replot
+```{r orderedFactorConversion}
+WeekdayCounts$Var1 = factor(WeekdayCounts$Var1, ordered=TRUE, levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday","Saturday"))
+ggplot(WeekdayCounts, aes(x=Var1, y=Freq)) + geom_line(aes(group=1))
+```
+Plot Line Styles
+```{r plotLineStyles}
+ggplot(WeekdayCounts, aes(x=Var1, y=Freq)) + geom_line(aes(group=1)) + xlab("Day of the Week") + ylab("Total Motor Vehicle Thefts")
+ggplot(data = WeekdayCounts, aes(x = Var1, y = Freq)) +
+ geom_line(aes(group=1), linetype=2) +
+ ggtitle("linetype=2") +
+ xlab("Day of Weeek") +
+ ylab("Total Motor Vehicle Thefts")
+#ggplot(WeekdayCounts, aes(x=Var1, y=Freq)) + geom_line(aes(group=1), linetype=2) + xlab("Day of the Week") + ylab("Total Motor Vehicle Thefts" + ggtitle("linetype=2"))
+ggplot(data = WeekdayCounts, aes(x = Var1, y = Freq)) +
+ geom_line(aes(group=1), alpha = 0.3) +
+ ggtitle("alpha=0.3") +
+ xlab("Day of Weeek") +
+ ylab("Total Motor Vehicle Thefts")
+#ggplot(WeekdayCounts, aes(x=Var1, y=Freq)) + geom_line(aes(group=1), alpha=0.3) + labs(list(title = "alpha=0.3", x = "Day of Weeek", y = "Total Motor Vehicle Thefts")))
+#p + labs(list(title = "Title", x = "X", y = "Y"))
+```
+Determine number of thefts per hour by making table of Weekday v Hour, convert to numeric dataFrame, and plot
+```{r theftsPerHour}
+table(mvt$Weekday, mvt$Hour)
+DayHourCounts = as.data.frame(table(mvt$Weekday, mvt$Hour))
+DayHourCounts$Hour = as.numeric(as.character(DayHourCounts$Var2))
+ggplot(DayHourCounts, aes(x=Hour, y=Freq)) + geom_line(aes(group=Var1))
+```
+Plot options
+```{r plotOptions}
+ggplot(DayHourCounts, aes(x=Hour, y=Freq)) + geom_line(aes(group=Var1, color=Var1), size=2)
+
+# Separate the weekends from the weekdays:
+DayHourCounts$Type = ifelse((DayHourCounts$Var1 == "Sunday") | (DayHourCounts$Var1 == "Saturday"), "Weekend", "Weekday")
+ggplot(data = DayHourCounts, aes(x = Hour, y = Freq)) +
+ geom_line(aes(group=Var1, color=Type), size=2) +
+ ggtitle("Segregate Weekends Colored by Type") +
+ xlab("Day of Weeek") +
+ ylab("Total Motor Vehicle Thefts")
+#ggplot(data = DayHourCounts, aes(x = Hour, y = Freq)) +
+ #geom_line(aes(group=Var1), color=Type, size=2) +
+ #gtitle("Segregate Weekends Colored by Type"))
+#ggplot(DayHourCounts, aes(x=Hour, y=Freq)) + geom_line(aes(group=Var1, color=Type) + ggtitle("Segregate Weekends\Colored by Type"), size=2) 
+ggplot(data = DayHourCounts, aes(x = Hour, y = Freq)) +
+ geom_line(aes(group=Var1, color=Type), size=2, alpha=0.2) +
+ ggtitle("Segregate Weekends Colored by Type") +
+ xlab("Day of Weeek") +
+ ylab("Total Motor Vehicle Thefts")
+#ggplot(DayHourCounts, aes(x=Hour, y=Freq)) + geom_line(aes(group=Var1, color=Type) + ggtitle("alpha=.2 transparency"), size=2, alpha=0.2) 
+```
+Define Mon-Sun order for days, and create heatmaps
+```{r heatmap}
+#chronoOrder days
+DayHourCounts$Var1 = factor(DayHourCounts$Var1, ordered=TRUE, levels=c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+
+ggplot(data = DayHourCounts, aes(x = Hour, y = Var1)) +
+  geom_tile(aes(fill=Freq)) +
+ ggtitle("frequency displayed as fill intensity")
+#ggplot(DayHourCounts, aes(x = Hour, y = Var1)) + geom_tile(aes(fill = Freq) + ggtitle("frequency displayed as fill intensity"))
+
+ggplot(DayHourCounts, aes(x = Hour, y = Var1)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name="Total MV Thefts") + ggtitle("with scale_fill_gradient") + theme(axis.title.y = element_blank())
+
+# Change the color scheme - define what is dark/light
+ggplot(DayHourCounts, aes(x = Hour, y = Var1)) + geom_tile(aes(fill = Freq)) + scale_fill_gradient(name="Total MV Thefts", low="white", high="red") + ggtitle("define low crime = white") + theme(axis.title.y = element_blank())
+```
+Load and display Chicago map
+```{r ChicagoStart}
+library('maps')
+library('ggmap')
+chicago = get_map(location = "chicago", zoom = 11)
+ggmap(chicago)
+```
+Plot first 100 motor vehicle thefts on map
+```{r chicagoMVT}
+ggmap(chicago) + 
+  geom_point(data = mvt[1:100,], 
+             aes(x = Longitude, y = Latitude) ) +
+  ggtitle("Motor Vehicle Thefts In Chicago")
+#ggmap(chicago) + geom_point(data = mvt[1:100,], aes(x = Longitude, y = Latitude) )#+ ggtitle("Motor Vehicle Thefts In Chicago"))
+
+#labs(x = 'Longitude', y = 'Latitude') + ggtitle('Baylor University')
+```
+By area, create a crimeCounts dataFrame with numeric long/lat data, and plot on map
+```{r stateCrimeCount}
+LatLonCounts = as.data.frame(table(round(mvt$Longitude,2), round(mvt$Latitude,2)))
+LatLonCounts$Long = as.numeric(as.character(LatLonCounts$Var1))
+LatLonCounts$Lat = as.numeric(as.character(LatLonCounts$Var2))
+ggmap(chicago) + 
+  geom_point(data = LatLonCounts, 
+             aes(x = Long, y = Lat, color=Freq, size=Freq )) +
+  ggtitle("Motor Vehicle Thefts In Chicago")
+
+#ggmap(chicago) + geom_point(data = LatLonCounts, aes(x = Long, y = Lat, color = Freq, size=Freq) +ggtitle("ChicagoCrime by Area"))
+ggmap(chicago) + geom_point(data = LatLonCounts, aes(x = Long, y = Lat, color = Freq, size=Freq)) + ggtitle("scale_color_gradient \ yellow=low; red=high") + scale_colour_gradient(low="yellow", high="red")
+ggmap(chicago) + geom_tile(data = LatLonCounts, aes(x = Long, y = Lat, alpha = Freq), fill="red")
+```
+Delete aquatic data
+```{r plotWOwaterCrime}
+LatLonCounts2 = LatLonCounts[LatLonCounts$Freq >0,]
+LatLonCounts2$Long = as.numeric(as.character(LatLonCounts2$Var1))
+LatLonCounts2$Lat = as.numeric(as.character(LatLonCounts2$Var2))
+ggmap(chicago) + ggtitle("Chicago has no water crime") + geom_tile(data=LatLonCounts2, aes(x = Long, y = Lat, alpha=Freq), fill="red")
+```
+Clean up environment and load murder data and US map
+```{r initializeStateMurder}
+rm(list=ls())
+murders = read.csv("./Data/murders.csv")
+statesMap = map_data("state")
+
+ggplot(statesMap, aes(x = long, y = lat, group = group)) + geom_polygon(fill = "white", color = "black") 
+```
+Merge statesMap data and murder data, and plot
+```{r ratesByStates}
+# Create a new variable called region with the lowercase names to match the statesMap:
+murders$region = tolower(murders$State)
+murderMap = merge(statesMap, murders, by="region")
+
+ggplot(murderMap, aes(x = long, y = lat, group = group, fill = Murders)) + ggtitle("Murders in the US by State") + geom_polygon(color = "black") + scale_fill_gradient(low = "black", high = "red", guide = "legend")
+
+ggplot(murderMap, aes(x = long, y = lat, group = group, fill = Population)) + ggtitle("Population in US") + geom_polygon(color = "black") + scale_fill_gradient(low = "black", high = "red", guide = "legend")
+
+murderMap$MurderRate = murderMap$Murders / murderMap$Population * 100000
+
+ggplot(murderMap, aes(x = long, y = lat, group = group, fill = MurderRate)) + ggtitle("Murder Rate") + geom_polygon(color = "black") + scale_fill_gradient(low = "white", high = "red", guide = "legend")
+
+ggplot(murderMap, aes(x = long, y = lat, group = group, fill = MurderRate)) + ggtitle("Murders in the US sans DC") + geom_polygon(white = "black") + scale_fill_gradient(low = "white", high = "red", guide = "legend", limits = c(0,10))
+
+murderMap$GunRate = murderMap$GunOwnership/ murderMap$Population * 100000
+
+ggplot(murderMap, aes(x = long, y = lat, group = group, fill = GunRate)) + ggtitle("Gun Ownership by State") + geom_polygon(color = "black") + scale_fill_gradient(low = "white", high = "red", guide = "legend")
+
+murderMap$GunRate = log(murderMap$GunOwnership/ murderMap$Population)
+
+ggplot(murderMap, aes(x = long, y = lat, group = group, fill = GunRate)) + ggtitle("Rate of Gun Ownership") +geom_polygon(color = "white") + scale_fill_gradient(low = "black", high = "red", guide = "legend")
+```
