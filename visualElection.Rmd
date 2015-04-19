@@ -1,0 +1,87 @@
+---
+title: "Visualisations Election by State - EdX"
+author: "Lin Crampton"
+date: "19 Apr 2015"
+output: html_document
+---
+Clean up environment, load and examine/plot statesMap mercator 
+```{r initializeStatesMap}
+rm(list=ls())
+setwd('~/EdX/AE')
+library('ggplot2')
+library('ggmap')
+library('maps')
+statesMap = map_data("state")
+str(statesMap)
+table(statesMap$group)
+#how many different groups are there
+length(unique(statesMap$group))
+
+ggplot(statesMap, aes(x = long, y = lat, group = group)) + 
+  geom_polygon(fill = "white", color = "blue") + 
+  coord_map("mercator")
+```
+Read in polling data, split into Train(2004&2008) and Test(2012)
+```{r trainTestData}
+polling = read.csv("./Data/PollingImputed.csv")
+Train = subset(polling, polling$Year %in% c(2004, 2008))
+Test = subset(polling, polling$Year==2012)
+```
+Train logistic response; determine 0.5 accuracy on Test
+```{r logRtrainTest}
+mod2 = glm(Republican~SurveyUSA+DiffCount, data=Train, family="binomial")
+TestPrediction = predict(mod2, newdata=Test, type="response")
+TestPredictionBinary = as.numeric(TestPrediction > 0.5)
+predictionDataFrame = data.frame(TestPrediction, TestPredictionBinary, Test$State)
+
+table(predictionDataFrame$TestPredictionBinary)
+mean(TestPrediction)
+```
+Merge predictionDataFrame w statesMap by region, ensuring factor consistency
+```{r mapNpredictionMerge}
+predictionDataFrame$region = tolower(predictionDataFrame$Test.State)
+predictionMap = merge(statesMap, predictionDataFrame, by = "region")
+predictionMap = predictionMap[order(predictionMap$order),]
+```
+Plot merged predictions
+```{r electionPredictionsInColor}
+ggplot(predictionMap, aes(x = long, y = lat, group = group, fill = TestPredictionBinary)) + ggtitle("ElectionPreds - Light=Repub, Dark=Demo") + geom_polygon(color = "black")
+
+ggplot(predictionMap, aes(x = long, y = lat, group = group, fill = TestPrediction))+ 
+	geom_polygon(color = "black", alpha=0.3) + 
+	ggtitle("Gradient Fill - Rep=Red, Demo=Blue") +
+	scale_fill_gradient(low = "blue", high = "red", guide = "legend", breaks= c(0,1), 
+	labels = c("Democrat", "Republican"), name = "Prediction 2012")
+
+ggplot(predictionMap, aes(x = long, y = lat, group = group, fill = TestPredictionBinary))+ 
+  geom_polygon(color = "black") +
+  ggtitle("Binary Test Prediction - Rep=Red, Demo=Blue") +
+  scale_fill_gradient(low = "blue", high = "red", guide = "legend", breaks= c(0,1), labels = c("Democrat", "Republican"), name = "Prediction 2012")
+```
+Our model didn't do too good of a job at predicting Florida.  How certain was our model?  How good was the model on California, and how certain there?
+```{r andFloridaGoes}
+predictionDataFrame$TestPrediction[which(predictionDataFrame$Test.State=="Florida")]
+predictionDataFrame$TestPrediction[which(predictionDataFrame$Test.State=="California")]
+```
+Try geom_polygon options
+```{r geom_polygonOptions}
+ggplot(predictionMap, aes(x = long, y = lat, group = group, fill = TestPredictionBinary))+ 
+  geom_polygon(color = "black", alpha=0.3) +
+  ggtitle("Alpah = 0.3") +
+  scale_fill_gradient(low = "blue", high = "red", guide = "legend", breaks= c(0,1), labels = c("Democrat", "Republican"), name = "Prediction 2012")
+
+ggplot(predictionMap, aes(x = long, y = lat, group = group, fill = TestPredictionBinary))+ 
+  geom_polygon(color = "black", linetype=3) +
+  ggtitle("Dashed Lines - Linetype - 5") +
+  scale_fill_gradient(low = "blue", high = "red", guide = "legend", breaks= c(0,1), labels = c("Democrat", "Republican"), name = "Prediction 2012")
+
+ggplot(predictionMap, aes(x = long, y = lat, group = group, fill = TestPredictionBinary))+ 
+  geom_polygon(color = "black", size=3) +
+  ggtitle("Size=3") +
+  scale_fill_gradient(low = "blue", high = "red", guide = "legend", breaks= c(0,1), labels = c("Democrat", "Republican"), name = "Prediction 2012")
+
+ggplot(predictionMap, aes(x = long, y = lat, group = group, fill = TestPredictionBinary))+ 
+  geom_polygon(color = "black") +
+  ggtitle("Binary Test Prediction - Rep=Red, Demo=Blue") +
+  scale_fill_gradient(low = "blue", high = "red", guide = "legend", breaks= c(0,1), labels = c("Democrat", "Republican"), name = "Prediction 2012")
+```
