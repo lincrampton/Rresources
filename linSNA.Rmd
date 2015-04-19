@@ -70,5 +70,11 @@ V(g)$color = "black"
 V(g)$color[V(g)$locale == "A"] = "magenta"
 V(g)$color[V(g)$locale == "B"] = "chartreuse"
 plot(g, vertex.label=NA, edge.width = 3)
+<<<<<<< HEAD
 #rglplot(g, vertex.label=NA)  #rgl install dies on 3.1.3
+||||||| merged common ancestors
+rglplot(g, vertex.label=NA)
+=======
+#rglplot(g, vertex.label=NA)  #rgl doesn't play well with R 3.1.3
+>>>>>>> 104343b38a9e5bcf351b2e7a060cfa511dc6a313
 ```

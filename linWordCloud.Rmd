@@ -1,0 +1,96 @@
+-----------
+##########################
+# Word Cloud
+########################
+-----------
+Clean it up and load data ensuring strings remain strings
+```{r}
+rm(list=ls())
+setwd('~/EdX/AE')
+tweets = read.csv('./Data/tweets.csv', stringsAsFactors=F)
+```
+Create a corpus using the Tweet variable
+```{r}
+library('tm')
+corpus = Corpus(VectorSource(tweets$Tweet))
+```
+Convert corpus to lowercase, remove punct and English-language stopwords
+```{r}
+corpus = tm_map(corpus, content_transformer(tolower))
+corpus = tm_map(corpus, PlainTextDocument)
+corpus = tm_map(corpus, content_transformer(removePunctuation))
+corpus = tm_map(corpus, removeWords, c("apple",stopwords("english")))
+
+corpus = tm_map(corpus, PlainTextDocument)
+```
+Build a DTM from corpus
+```{r}
+frequencies = DocumentTermMatrix(corpus)
+```
+Convert DTM to dataFrame (allTweets)
+```{r}
+allTweets = as.data.frame(as.matrix(frequencies))
+```
+How many unique terms?
+```{r}
+unique(frequencies)  #
+```
+Build wordcloud from the DTM, using vector of words (colnames(xxx) and word frequencies (colSums(xxx)))
+```{r}
+library('wordcloud')
+wordcloud(colnames(allTweets), 
+          colSums(allTweets), 
+          scale=c(2,0.25),
+          colors='green', 
+          #colors=brewer.pal(8,"Greys")) #greyscale
+          #colors=brewer.pal(4, "YlOrRd")) #sequential palette
+          #colors=brewer.pal(8, "Set2")) #qualitative palette
+          #colors=brewer.pal(8, "Accent")) #qualitiative palette
+          random.color=F)
+```  
+when random.color=T, no info conveyed via color
+```{r}
+wordcloud(colnames(allTweets), 
+          colSums(allTweets), 
+          colors='blue', 
+          scale=c(2,0.25),
+          random.color=T)
+```
+A wordcloud of all the tweets with a 0.5 rot.per
+```{r}
+wordcloud(
+  colnames(allTweets),
+  colSums(allTweets), 
+  scale=c(2,0.25), #max.words=100, 
+  #random.order=F, #most freq words together in center
+  random.order=T, 
+  #rot.per=0.1, #default rot.per = 0.1
+  rot.per=0.5, #rot.per controls the frequency of vertical elements
+  use.r.layout=FALSE, 
+	colors=brewer.pal(9, "Blues")[c(-1, -2, -3, -4)],
+	ordered.colors=FALSE)
+```
+Make a wordcloud of tweets with a negative sentiment (sentiment== -1)
+```{r}
+negativeTweets = subset(allTweets, tweets$Avg <= -1)
+wordcloud(
+  colnames(negativeTweets),
+  colSums(negativeTweets), 
+  scale=c(2,0.25), #max.words=100, 
+  #random.order=F, #most freq words together in center
+  random.order=T, 
+  #rot.per=0.1, #default rot.per = 0.1
+  rot.per=0.5, #rot.per controls the frequency of vertical elements
+  use.r.layout=FALSE, 
+  colors=brewer.pal(4, "YlOrRd"))
+```
+Check out the position of the most frequent words when random.order=F  - centrally located?
+```{r}
+wordcloud(colnames(negativeTweets), colSums(negativeTweets), random.order=F, colors = "purple", use.r.layout=FALSE, ordered.colors = T)
+```
+versus the position of the most frequent words when random.order=T
+```{r}
+wordcloud(colnames(negativeTweets), colSums(negativeTweets), random.order=T, colors = "purple", use.r.layout=FALSE, ordered.colors = T)
+
+```
+
