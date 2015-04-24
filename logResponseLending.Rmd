@@ -1,0 +1,106 @@
+**** 
+Read in & examine structure of data file adnd determine proportion of the loans were not repaid in full? 
+```{r initialize}
+loans = read.csv('loans.csv')
+table(loans$not.fully.paid)
+as.numeric(table(loans$not.fully.paid)/nrow(loans))[2]
+```
+__Exploration__ --Are there NA's in the dataset?  Which variables contain NA values?  There is a slick way to do this, and a rudimentary way.  Use the rudimentary method to double check the results provided by the slick method.
+```{r dataExploration}
+names(which(sapply(loans, function(x)sum(is.na(x))>=1)=="TRUE"))
+summary(loans)
+```
+__Imputation__ --Imputation helps rid you of NA values by extrapolating the NA value from the existing values in the observation.  Use the mice package (Multivariate Imputation by Chained Equations) to impute values in R.  At the end, chick out and use a preprocessed file
+```{r imputation}
+library(mice)
+set.seed(144)
+vars.for.imputation = setdiff(names(loans), "not.fully.paid")
+imputed = complete(mice(loans[vars.for.imputation]))
+loans[vars.for.imputation] = imputed
+loans=read.csv('./loans_imputed.csv') #ensure we are all on same DB
+```
+__Training/Testing Split__ -- Using the newly imputed dataset, make a 70/30 training/test set split on a 144 split
+```{r splitTrainTest}
+library('caTools')
+set.seed(144)
+spl = sample.split(loans$not.fully.paid, 0.7)
+train = subset(loans, spl == TRUE)
+test = subset(loans, spl == FALSE)
+```
+__LogisticResponse__ -- Use the training set to generate a logistic response model to determine which variables are significant at a value less than 0.05.  R can extract these variables, but double-check using the summary command.
+```{r logisticResponseModelGeneration}
+loanLog = glm(not.fully.paid~., data=train, family="binomial")
+names(summary(loanLog)$coeff[,1][id])
+summary(loanLog)
+```
+__Predict__ -- Two borrowers - one has a 710 FICO and the other a 700 FICO.  Otherwise identical.  Is one a better loan risk?  By how much?  Logits will be the log odds of borrowerA and borrowerB, and calculate the value of Logit(A) - Logit(B)
+```{r preditCreditWorthiness}
+ficoCoeff = -9.406e-03
+A = 700
+B = 710
+(ficoCoeff * A) - (ficoCoeff * B)
+exp(ficoCoeff*A)/exp(ficoCoeff*B)
+```
+__Confusion Matrix__ -- Predict the probability of test set loan default using the predict function, and storing the predicted probabilities in a variable named predicted.risk added to the test set.  Comput the confusion matrix using a threshold of 0.5.
+```{r confusionMatrix}
+test$predicted.risk = predict(loanLog, newdata=test, type="response")
+table(test$not.fully.paid, test$predicted.risk > 0.5)
+```
+__ROCR - Model Accuracy__ -- Determine model accuracy by computing the test set AUC using ROCR package.
+```{r ROCRandModelAccuracy}
+library('ROCR')
+pred = prediction(test$predicted.risk, test$not.fully.paid)
+as.numeric(performance(pred, "auc")@y.values)
+```
+__Bivariate Model Prediction__ -- If you make test set predictions for the bivariate model, what is the highest predicted probability of loan default?
+```{r bivariateModelPredict}
+bivariate = glm(not.fully.paid~int.rate, data=train, family="binomial")
+pred.bivariate = predict(bivariate, newdata=test, type="response")
+summary(pred.bivariate)
+max(test$bivariateTestPred[test$not.fully.paid==0])
+```
+__Test Set AUC -- What is the test set AUC of the bivariate model?  What is the relationship between interest rate and FICO score?
+```{r testSetAUC}
+bivariate = glm(not.fully.paid ~int.rate, data=train, family=binomial)
+bivariate.Pred = predict(bivariate, newdata=test, type='response')
+max(test$bivariateTestPred[test$not.fully.paid==0])
+cor(train$int.rate, train$fico)
+```
+__Test Set Predictions__ -- Make test set predictions for the bivariate model and determine the highest predicted probability of a loan not being paid in full on the testing set
+```{r testSetPredictions}
+predict2 <- predict(bivariate, newdata = test, type = "response")
+max(predict2)
+```
+With a logistic regression cutoff of 0.5, how many loans would be predicted as not being paid in full on the testing set?
+```{r moredPredictions}
+table(predict2 > .5)
+ROCRpred2 = prediction(predict2, test$not.fully.paid)
+auc2 = as.numeric(performance(ROCRpred2, "auc")@y.values)
+```
+__Financial Predictions__ -- How much does a $10 investment with an annual interest rate of 6% pay back after 3 years, using continuous compounding of interest?
+```{r continuousCompounding}
+c = 10 
+r = .06 
+t = 3
+c * exp(r * t)
+```
+What is the maximum profit of a $10 investment in testing set loan?
+```{r maxProfit}
+test$profit = exp(test$int.rate*3) - 1
+test$profit[test$not.fully.paid == 1] = -1
+summary(test$profit)
+max(test$profit) * 10
+```
+What is the average profit in a high-interest (++15%) loan?
+```{r averageProfit}
+highInterest <- subset(test, int.rate > 0.15)
+mean(highInterest$profit)
+table(highInterest$not.fully.paid)
+```
+Of the top 100 high-interest loans, what was the total profit, and what percentage were not paid back in full?
+```{r totalProfit}
+cutoff <- sort(highInterest$predicted.risk, decreasing=FALSE)[100]
+selectedLoans <- subset(highInterest, predicted.risk <= cutoff)
+sum(selectedLoans$profit)
+table(selectedLoans$not.fully.paid)
+```
