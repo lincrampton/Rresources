@@ -1,0 +1,33 @@
+---
+title: "courseraModelThinkingFinal"
+author: "Lin"
+date: "04/25/2015"
+output: html_document
+---
+#__Crowd Error__
+There are three predictions: 105, 125, 190. The actual value is 145. Which of the following values is closest to the crowd (squared) error?
+```{r crowdError}
+actualVal= 145
+predictions = matrix(c(105,125,190),nrow=3)
+averageError <- mean(sapply(predictions, function(x) ((predictions - actualVal)^2)))
+diversity <- mean(sapply(predictions, function(x) ((predictions - mean(predictions))^2)))
+crowdError = averageError - diversity
+```
+#__Replicator Dynamics__
+In October's survey, 15% prefer cutting taxes, 20% prefer raising taxes, and 65% prefer keeping taxes the same.
+In November, 35% prefer cutting taxes, 15% prefer raising taxes, and 50% prefer keeping taxes the same.
+What fitness level supports this?  Do trial and error with different payoff options provided.
+```{r replicatorDynamics}
+payoffs=matrix((c(3,1,1)), ncol=3)
+proports=matrix(c(.15,.2,.65), ncol=3)
+weights=payoffs*proports
+nextPayoff = weights/sum(weights)
+nextPayoff
+```
+#__Quantized Happiness__
+The City of Ann Arbor opened a new dog park. If D equals the number of dogs that are at the park, then happiness per dog (at the park) equals 25 - D. This holds so long as there are more than 10 dogs at the park. If there are 10 dogs or fewer in the park, happiness per dog equals 8. Any dogs not at the park have a happiness of 5 in either scenario. Assume there are 90 dogs in Ann Arbor. If there are 15 dogs at the park, what is the total happiness of all dogs in Ann Arbor
+```{r dogParking}
+dogsAtPark = 12
+totalDogs = 90
+(25-dogsAtPark)*dogsAtPark + 5*(totalDogs-dogsAtPark)
+```
