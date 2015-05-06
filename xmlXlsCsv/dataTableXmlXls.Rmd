@@ -1,0 +1,102 @@
+---
+title: "XlsXmlDataTable"
+author: "Lin"
+date: "05/06/2015"
+output: html_document
+---
+#Data Input and DataTable
+Demonstrating the power of data table, and examples of xls and xml imports
+---
+set working directory and date
+```{r initialize}
+setwd('~/Coursera/CleanData')
+dateDownloaded=date(); dateDownloaded
+```
+__csv from website__
+Download an Internet file, read it in as csv and determine the number of million dollar houses (VAL==24, per codebook).
+---
+```{r readCSV}
+fileUrl = 'https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06hid.csv'
+fileOnDisk = './Data/housing.csv'
+#list.files('./Data')
+download.file(fileUrl, destfile=fileOnDisk, method='curl')
+houses=read.csv(fileOnDisk,header=T)
+#list.files('./Data')
+length(which(houses$VAL==24))
+#or
+table(houses$VAL)
+```
+__dataTable from website__
+Download an Internet file, read it in as a data table and dtermine the number of million dollar houses (VAL==24, per codebook). Remember .N option in data.table.
+```{r readDT}
+library('data.table')
+```
+```{r read0}
+housesDT = data.table(read.csv(fileOnDisk))
+```
+```{r read1}
+setkey(housesDT, VAL)
+housesDT[, .N, key(housesDT)]
+```
+__xlsx from website__
+Read in R18-23 and C7-15 of gasInfo file https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FDATA.gov_NGAP.xlsx and determine sum of the column resulting from multiplying Zip by Ext (removing NAs first
+```{r xlsRead}
+packages = c("gdata", "xlsx")
+sapply(packages, library, character.only=T, quietly=T)
+fileUrl = 'https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FDATA.gov_NGAP.xlsx'
+diskFile = './Data/naturalGas.xlsx'
+
+download.file(fileUrl, destfile=diskFile, method='curl')
+```
+```{r extractRowsCols}
+list.files('./Data')
+cols=7:15; rows=18:23
+natGas = read.xlsx(diskFile, sheetIndex=1, rowIndex=rows, colIndex=cols)
+
+sum(natGas$Zip*natGas$Ext,na.rm=T) 
+```
+__xml from website__
+In the xmldata, https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Frestaurants.xml, how many restaurants have zipcode 21231?
+```{r xml}
+fileUrl = "http://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Frestaurants.xml"
+library('XML')
+
+doc = xmlInternalTreeParse(fileUrl)
+#or
+#library('httr')
+#doc <- xmlTreeParse(rawToChar(GET(fileUrl)$content), useInternal=TRUE)
+rootNode = xmlRoot(doc)
+xmlName(rootNode)
+names(rootNode)
+names(rootNode[[1]][[1]])
+```{r results='hide'}
+xmlSApply(rootNode, xmlValue)
+xpathSApply(rootNode, '//zipcode', xmlValue)
+length(which(xpathSApply(rootNode, '//zipcode', xmlValue)==21231))
+#or 
+zipcode = xpathSApply(rootNode, '//zipcode', xmlValue)
+table(zipcode == 21231) 
+``` 
+__data.table__
+fread https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06pid.csv, DT it and find the fastest way to calclate the average of pwgtp15 broken down by gender
+```{r dataTable checkingFunction}
+library('data.table')
+fileUrl='https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Fss06pid.csv'
+download.file(fileUrl, destfile='./Data/chixPlus.xlsx', method='curl')
+DT = fread('./Data/chixPlus.xlsx', verbose=F)
+
+check <- function(y, t) {
+    message(sprintf("Elapsed time: %.10f", t[3]))
+    print(y)
+}
+```
+checking for output validity and speed
+```{r validOutputNspeed, error=T}
+choice1 <- system.time(y <- DT[,mean(pwgtp15),by=SEX] ); check(y, choice1)
+choice2 <- system.time(y <- rowMeans(DT)[DT$SEX==1]) + system.time(rowMeans(DT)[DT$SEX==2] ); check(y, choice2)
+choice3 <- system.time(y <- tapply(DT$pwgtp15,DT$SEX,mean) ); check(y, choice3)
+choice4 <- system.time(y <- mean(DT$pwgtp15,by=DT$SEX) ); check(y, choice4)
+choice5 <- system.time(y <- mean(DT[DT$SEX == 1, ]$pwgtp15)) + system.time(mean(DT[DT$SEX ==2, ]$pwgtp15)); check(y, choice5)
+choice6 <- system.time(y <- sapply(split(DT$pwgtp15,DT$SEX),mean) ); check(y, choice6)
+check(y, choice1)
+```
