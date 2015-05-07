@@ -1,0 +1,95 @@
+*** CLUSTER
+---
+Read in flower data (flower.csv) and change datatype to matrix to vector.  Note that it would not be a good idea to go directly from csv to vector, because would lose nice square matrix structure
+```{r initialise}
+flower = read.csv("./Data/flower.csv", header=FALSE)
+#str(flower)
+flowerMatrix = as.matrix(flower)
+#str(flowerMatrix)
+flowerVector = as.vector(flowerMatrix)
+#str(flowerVector)
+```
+Compute a hierarchical (euclidean) distance matrix and examine effect of selecting 3 clusters.
+```{r euclideanDistanceMatrix}
+distance = dist(flowerVector, method = "euclidean")
+clusterIntensity = hclust(distance, method="ward.D")
+plot(clusterIntensity)
+```
+```{r clusterFlowers, error=T}
+library('stats')
+plot(clusterIntensity, k=3, border="red")
+rect.hclust(clusterIntensity, k = 3, border = "red")
+flowerClusters = cutree(clusterIntensity, k = 3)
+cutThree <- cutree(clusterIntensity, k=3); table(cutThree)
+cutFour <- cutree(clusterIntensity, k=4); table(cutFour)
+cutFive  <- cutree(clusterIntensity, k=5); table(cutFive)
+#flowerClusters
+```
+```{r slightlyMoreVisibleClusters}
+hcd = as.dendrogram(clusterIntensity)
+plot(cut(hcd, h=0.3)$upper, 
+     main="Upper tree of cut at h=0.3")
+plot(cut(hcd, h=0.3)$lower[[2]], 
+     main="Second branch of lower tree with cut at h=0.3")
+```
+```{r improveDendrogramApe}
+library('ape')
+plot(as.phylo(clusterIntensity), cex=0.1, label.offset=1)
+plot(as.phylo(clusterIntensity), type = "unrooted",cex=0.1)
+plot(as.phylo(clusterIntensity), type = "fan", cex=0.01, label.offset=0.05)
+```
+```{r improveDendrogramGGdendro}
+library('ggdendro')
+ggdendrogram(clusterIntensity, theme_dendro=F)
+ggdendrogram(clusterIntensity, rotate=T, size=4, theme_dendro=F)
+```
+Find the mean intensity value for each cluster
+```{r meanIntensityPerCluster}
+tapply(flowerVector, flowerClusters, mean)
+```
+Use dim to convert flowerClusters vector to matrix, then examine how image was segmented using image function.
+```{r examineImage}
+dim(flowerClusters) = c(50,50)
+image(flowerClusters, axes = FALSE)
+```
+Read in an MRI datafile and transform into a matrix into a vector
+```{r MRIdata2vector}
+healthy = read.csv("Data/healthy.csv", header=FALSE)
+healthyMatrix = as.matrix(healthy)
+#str(healthyMatrix)
+image(healthyMatrix,axes=FALSE,col=grey(seq(0,1,length=256)))
+healthyVector = as.vector(healthyMatrix)
+```
+Is it possible to compute the distance matrix using hierarchical clustering? Kmeans with a maximum 1000 iterations?
+```{r KmeansDistance, error=T}
+distance = dist(healthyVector, method = "euclidean") # 2 big
+#str(healthyVector)
+k = 5
+set.seed(1)
+KMC = kmeans(healthyVector, centers = k, iter.max = 1000)
+#str(KMC)
+```
+Make a variable healthyClusters with kmeans cluster info. Convert healthyClusters to a matrix.  Make sure it is the same size as healthyMatrix.
+```{r KmeansCompareClusters}
+healthyClusters = KMC$cluster
+KMC$centers[2]
+dim(healthyClusters) = c(nrow(healthyMatrix), ncol(healthyMatrix))
+image(healthyClusters, axes = FALSE, col=rainbow(k))
+```
+Use this MRI image to identify sick clusters.  Read in tumor dataset. Treat healthyVector as a training set.
+```{r initialiseTumorVector}
+tumor = read.csv("./Data/tumor.csv", header=FALSE)
+tumorMatrix = as.matrix(tumor)
+tumorVector = as.vector(tumorMatrix)
+```
+```{r flexClustering}
+#install.packages("flexclust")
+library('flexclust')
+
+KMC.kcca = as.kcca(KMC, healthyVector)
+
+tumorClusters = predict(KMC.kcca, newdata = tumorVector)
+dim(tumorClusters) = c(nrow(tumorMatrix), ncol(tumorMatrix))
+
+image(tumorClusters, axes = F, col=rainbow(k))
+```
