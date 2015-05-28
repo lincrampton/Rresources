@@ -1,0 +1,74 @@
+---
+title: "math380hw1"
+author: "Lin"
+date: "`r Sys.Date()`"
+output: html_document
+---
+# 1.1 - Examine relative windiness
+Are some cities more windy than others?    
+Provided data contains the average wind speeds (in miles per hour) for 45 U.S. cities     
+8.9, 12.4, 8.6, 11.3, 9.2, 8.8, 35.1, 6.2, 7.0,
+7.1, 11.8, 10.7, 7.6, 9.1, 9.2, 8.2, 9.0, 8.7,
+9.1, 10.9, 10.3, 9.6, 7.8, 11.5, 9.3, 7.8, 8.8,
+8.8, 12.7, 8.4, 7.8, 5.7, 10.5, 10.5, 9.6, 8.9,
+10.2, 10.3, 7.7, 10.6, 8.3, 8.8, 9.5, 8.8, 9.4
+```{r initialize}
+windVec = c(8.9, 12.4, 8.6, 11.3, 9.2, 8.8, 35.1, 6.2, 7.0,
+7.1, 11.8, 10.7, 7.6, 9.1, 9.2, 8.2, 9.0, 8.7,
+9.1, 10.9, 10.3, 9.6, 7.8, 11.5, 9.3, 7.8, 8.8,
+8.8, 12.7, 8.4, 7.8, 5.7, 10.5, 10.5, 9.6, 8.9,
+10.2, 10.3, 7.7, 10.6, 8.3, 8.8, 9.5, 8.8, 9.4)
+windVec
+```
+The value 35.1 was recorded at Mt. Washington, New Hampshire. Does the geography of that city explain the magnitude of its average wind speed?
+```{r withoutOutlier}
+windVecLessOutlier = windVec[-7]
+length(windVec)
+length(windVecLessOutlier)
+mean(windVec)
+mean(windVecLessOutlier)
+median(windVec)
+median(windVecLessOutlier)
+```
+Construct a relative frequency histogram for these data. (Choose the class boundaries without including the value 35.1 in the range of values.)
+```{r initialPlots}
+hist(windVec, col='lightblue', ylab='mph', main='Wind Data of Various Cities')
+hist(windVecLessOutlier, col='lightblue', ylab='mph', main='Wind Data - outlier removed')
+boxplot(windVec, col='lightblue', ylab="mph", main='Wind Data of Various Cities')
+boxplot(windVecLessOutlier, col='lightblue', ylab="mph", main='Wind Data - outlier removed')
+```
+     
+What about Chicago (at 10.3 mph) -- how do other cities stack up in terms of windiness?
+```{r windyChicago}
+Chicago=10.3
+hist(windVec, col='lightblue', ylab='mph', main='Wind Data of Various Cities, noting Chicago')
+abline(v=Chicago, col='red')
+hist(windVecLessOutlier, col='lightblue', ylab="mph", main='Wind Data - outlier removed, Chicago noted')
+abline(v=Chicago, col='red')
+```
+     
+The average wind speed for Chicago is 10.3 miles per hour. What percentage of the cities have average wind speeds in excess of Chicago’s?  
+```{r relativeWindSpeed}
+windierThanChicago = which(windVec>Chicago)
+propWindierThanChicago = length(windierThanChicago)/length(windVec)
+calmerThanChicago = which(windVec<=Chicago)
+propCalmerThanChicago = length(calmerThanChicago)/length(windVec)
+propWindierThanChicago; propCalmerThanChicago
+```
+#Violin Plotting
+A violin plot is a combination of a boxplot and a kernel density plot, and will illustrate the various contributions.
+```{r violinPlotting}
+library('vioplot')
+calmerThanChicago = which(windVec<Chicago)
+equalToChicago = which(windVec==Chicago)
+vioplot(windierThanChicago, equalToChicago, calmerThanChicago, names = c('windier', 'equal', 'calmer'), col='lightblue')
+title("Windiness Level, Compared to Chicago")
+```
+     
+#Bagplotting       
+Bagplots are a bivariate take on the univariate boxplot. The bag contains 50% of all points. The bivariate median is approximated. The fence separates points in the fence from points outside. Outliers are displayed.   
+This is not a real good use of bagplot ... only for fun.
+```{r bagplot}
+library('aplpack')
+bagplot(which(windVec>10.3), which(windVec<=10.3), ylab='mpg', show.whiskers=T, main='Wind Speed of U.S. Cities', pch=22)
+```
