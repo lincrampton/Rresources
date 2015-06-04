@@ -1,0 +1,17 @@
+---
+title: "scatterColorFactorsVerticalDivider"
+author: "Lin"
+date: "r `Sys.Date()"
+output: html_document
+---
+```{r}
+library('ggplot2')
+
+treatExperiment = data.frame(TreatsConsumed= c(24,18,25,23,21,25,2,1,0,2,3,2,0,0,30,25,28,24), TreatmentPeriod=c(rep("Before",6), rep("During",8), rep("After",4)), Days=factor(1:18))
+
+ggplot(treatExperiment, aes(Days, TreatsConsumed, color = factor(TreatmentPeriod)))+
+  geom_point()+
+  geom_vline(xintercept = 6.5, linetype='dashed') +
+  geom_vline(xintercept = 14.5, linetype='dashed') +
+  ggtitle('Number of Treats Consumed\n Under Different Reinforcement Contingencies')
+```
