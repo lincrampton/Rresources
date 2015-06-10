@@ -1,0 +1,46 @@
+---
+title: "Bernoulli Probabilities and Binomial Plotting"
+author: "Lin"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+#Bernoulli Probabilites
+If you want to model the question, what is the probability of tossing a coin 8 times to obtain sequence HHTTTHTT? (2H3TH2T)
+
+$$f(x)=P(X=x)=B(n,p)=\begin{pmatrix}n\\ x \end{pmatrix} \cdot p^x \cdot q^{n-x}=\frac{n!}{x!(n-x)!}$$
+
+Model it as a binomial, consider 'H' = probability of success, with 8 independent trials with a probability of success=0.5.         
+In r, _dbinom(k,n,p)_
+```{r obtainBasicBinomialProbability}
+dbinom(x=5,size=8,prob=0.5)
+```
+* * *
+#Binomial Distribution     
+Think of the binomial distribution as the sum of repeated Bernoulli trials.  
+```{r setup, echo=F}
+xSeq = 3:17
+```
+```{r BernoulliDataFrame}
+df = data.frame(oneThird=dbinom(x=xSeq, size=20, prob=1/3), oneHalf=dbinom(x=xSeq, size=20, prob=1/2), threeFourths=dbinom(x=xSeq, size=20, prob=3/4), nineTenths=dbinom(x=xSeq, size=20, prob=9/10))
+#df = data.frame("probability0.333"=dbinom(x=xSeq, size=20, prob=1/3), "probability0.5"=dbinom(x=xSeq, size=20, prob=1/2), "probability0.75"=dbinom(x=xSeq, size=20, prob=3/4), "probability0.9"=dbinom(x=xSeq, size=20, prob=9/10))
+dfS=stack(df)
+```
+```{r, echo=F}
+dfS$Xvalue=c(xSeq,xSeq,xSeq,xSeq)
+colnames(dfS)=c('Freq', 'Prob', 'Xvalue')
+levels(dfS$Prob)=c("p=9/10", "p=1/2", "p=1/3", "p=3/4")
+#library('plyr')
+#dfS=mapvalues(dfS$Prob, from=c("oneThird", "oneHalf","threeFourths", "nineTenths"), to=c("p=1/3", "p=1/2", "p=3/4", p="p=9/10"))
+```
+```{r BernoulliFacetPlot}
+library('ggplot2')
+library('grid')
+ggplot(data=dfS, aes(x=Xvalue, y=Freq)) + 
+    geom_bar(stat = "identity", col = "purple", fill = "lightblue") + 
+    scale_y_continuous(expand = c(0.01, 0)) + 
+    xlab("x") + ylab("Density") + 
+  labs(title = "Binomial Distribution\nvarying values of P") + theme_bw(16, "serif") +
+  facet_wrap(~ Prob, ncol=2) + 
+  theme(panel.margin = unit(2, "lines")) +
+  theme(plot.title = element_text(size = rel(1.2), vjust = 1.5))
+```
